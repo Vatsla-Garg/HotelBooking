@@ -6,3 +6,4 @@ class DbUser(Base):
     id= Column(Integer, primary_key=True, index=True)
     username = Column(String)
     password = Column(String)
+    role = Column(String)
