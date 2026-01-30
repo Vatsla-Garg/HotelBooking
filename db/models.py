@@ -12,3 +12,10 @@ class DbUser(Base):
     email = Column(String, unique=True, index=True)
     password = Column(String)
     role = Column(String)
+class DbHotelManager(Base):
+    __tablename__ = "hotel_managers"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String)
+    email = Column(String, unique=True, index=True)
+    password = Column(String)
+    hotel_id = Column(Integer)
