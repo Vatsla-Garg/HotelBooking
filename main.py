@@ -1,4 +1,4 @@
-print("MAIN FILE LOADED BOOKING PROJECT")
+print("MAIN FILE LOADED BOOKING PROJECT NOW")
 
 from fastapi import FastAPI
 from db import models
