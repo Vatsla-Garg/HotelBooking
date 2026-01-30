@@ -18,3 +18,10 @@ class UserDisplay(BaseModel):
     # pydantic only speaks "Dictionary," but your database speaks "SQLAlchemy Object"; orm_mode = True gives Pydantic the ability to translate the database object into a format it understands.
     class Config:
         orm_mode = True
+
+class GetUserDisplay(BaseModel):
+    username: str
+    email: str
+    role: str
+    class Config:
+        orm_mode = True
