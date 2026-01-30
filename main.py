@@ -1,11 +1,13 @@
+print("MAIN FILE LOADED BOOKING PROJECT")
 from fastapi import FastAPI
 from db import models
 from db.database import engine
-from router import user
+from router import user, manager
 app = FastAPI()
 
 # registers the routes into the main FastAPI app
 app.include_router(user.router)
+app.include_router(manager.router)
 
 @app.get("/")
 def index():

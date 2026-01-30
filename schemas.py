@@ -25,3 +25,19 @@ class GetUserDisplay(BaseModel):
     role: str
     class Config:
         orm_mode = True
+
+
+class HotelManagerBase(BaseModel):
+    username: str = Field(..., min_length=1, max_length=50)
+    email: str = EmailStr
+    password: str = Field(..., min_length=8)
+    hotel_id: int
+
+
+class HotelManagerDisplay(BaseModel):
+    id: int
+    username: str
+    email: str
+    hotel_id: int
+    class Config:
+        orm_mode = True
