@@ -15,6 +15,7 @@ class UserBase(BaseModel):
 
 # schema for data leaving the API
 class UserDisplay(BaseModel):
+    id: int
     username: str
     email: str
     role: str
