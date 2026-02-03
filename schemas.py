@@ -18,7 +18,7 @@ class UserDisplay(BaseModel):
     id: int
     username: str
     email: str
-    role: str
+    role: Role
     created_at: datetime
     updated_at: datetime
     status: UserStatus
@@ -28,7 +28,8 @@ class UserDisplay(BaseModel):
 class GetUserDisplay(BaseModel):
     username: str
     email: str
-    role: str
+    role: Role
+    status: UserStatus
     model_config = ConfigDict(from_attributes=True)
 
 

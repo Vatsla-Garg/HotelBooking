@@ -1,5 +1,5 @@
 from db.database import Base
-from sqlalchemy import Column, DateTime
+from sqlalchemy import Column, DateTime, Enum
 from sqlalchemy.sql.sqltypes import Integer, String
 from datetime import datetime
 from db.enums import Role
@@ -13,7 +13,7 @@ class DbUser(Base):
     username = Column(String)
     email = Column(String, unique=True, index=True)
     password = Column(String)
-    role = Role
+    role = Column(Enum(Role), nullable=False)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)
     status = Column(String, default="ACTIVE")
