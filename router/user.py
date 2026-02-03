@@ -5,6 +5,7 @@ from schemas import UserBase, UserDisplay, GetUserDisplay
 from sqlalchemy.orm import Session
 from db.database import get_db
 from db import db_user
+from auth.oauth2 import oauth2_scheme, get_current_user
 
 router = APIRouter(
     prefix="/user",
@@ -44,7 +45,7 @@ def get_all_users(db: Session = Depends(get_db)):
             summary='Get a specific user',
             description="Get a specific user"
             )
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(user_id: int, db: Session = Depends(get_db), current_user:UserBase=Depends(get_current_user)):
     user = db_user.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
