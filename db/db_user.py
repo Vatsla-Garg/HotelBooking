@@ -2,6 +2,7 @@ from sqlalchemy.orm.session import Session
 from schemas import UserBase
 from db.models import DbUser
 from db.hash import Hash
+from fastapi import HTTPException
 
 #create functionality to write to db
 def create_user(db:Session, request: UserBase):
@@ -21,6 +22,11 @@ def get_all_users(db:Session):
 
 def get_user(db:Session, user_id: int):
     return db.query(DbUser).filter(DbUser.id == user_id).first()
+def get_user_by_email(db:Session, email: str):
+    user= db.query(DbUser).filter(DbUser.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User does not exist")
+    return user
 
 def update_user(db:Session, user_id:int, request: UserBase):
     user = db.query(DbUser).filter(DbUser.id == user_id)

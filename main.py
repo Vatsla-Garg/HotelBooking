@@ -4,11 +4,13 @@ from fastapi import FastAPI
 from db import models
 from db.database import engine
 from router import user, manager
+from auth import authentication
 app = FastAPI()
 
 # registers the routes into the main FastAPI app
 app.include_router(user.router)
 app.include_router(manager.router)
+app.include_router(authentication.router)
 
 @app.get("/")
 def index():
