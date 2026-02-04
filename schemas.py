@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 #Pydantic is a data validation library
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
-
+from typing import Optional
 from db.enums import UserStatus, Role
 
 
@@ -31,6 +31,11 @@ class GetUserDisplay(BaseModel):
     role: Role
     status: UserStatus
     model_config = ConfigDict(from_attributes=True)
+
+class UserPatchBase(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str]= None
+    status:Optional[UserStatus]= None
 
 
 class HotelManagerBase(BaseModel):

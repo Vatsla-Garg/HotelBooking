@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from db.models import DbUser
-from schemas import UserBase, UserDisplay, GetUserDisplay
+from schemas import UserBase, UserDisplay, GetUserDisplay, UserPatchBase
 from sqlalchemy.orm import Session
 from db.database import get_db
 from db import db_user
@@ -11,7 +11,6 @@ router = APIRouter(
     prefix="/user",
     tags=["user"]
 )
-
 
 # Create
 @router.post(
@@ -51,9 +50,14 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user:UserBase=
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
     return user
 
-
-
 # Update
+@router.patch('/{user_id}',
+              tags=["user"],
+              description="Update a user",
+              response_model=UserDisplay
+              )
+def update_user(user_id: int, request: UserPatchBase, db: Session = Depends(get_db)):
+    return db_user.patch_user(request, user_id, db)
 
 # Delete
 @router.delete('/{user_id}',
