@@ -46,9 +46,12 @@ def get_all_users(db: Session = Depends(get_db)):
             )
 def get_user(user_id: int, db: Session = Depends(get_db), current_user:UserBase=Depends(get_current_user)):
     user = db_user.get_user(db, user_id)
+
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist")
-    return user
+    if current_user.id == user_id:
+        return user
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
 # Update
 @router.patch('/{user_id}',
@@ -56,8 +59,10 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user:UserBase=
               description="Update a user",
               response_model=UserDisplay
               )
-def update_user(user_id: int, request: UserPatchBase, db: Session = Depends(get_db)):
-    return db_user.patch_user(request, user_id, db)
+def update_user(user_id: int, request: UserPatchBase, db: Session = Depends(get_db),current_user:UserBase=Depends(get_current_user)):
+    if current_user.id == user_id:
+        return db_user.patch_user(request, user_id, db)
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
 # Delete
 @router.delete('/{user_id}',
