@@ -1,9 +1,8 @@
 from sqlalchemy.orm.session import Session
-from schemas import UserBase
+from schemas import UserBase, UserPatchBase
 from db.models import DbUser
 from db.hash import Hash
 from fastapi import HTTPException
-
 #create functionality to write to db
 def create_user(db:Session, request: UserBase):
     new_user = DbUser(
@@ -28,15 +27,25 @@ def get_user_by_email(db:Session, email: str):
         raise HTTPException(status_code=404, detail="User does not exist")
     return user
 
-def update_user(db:Session, user_id:int, request: UserBase):
-    user = db.query(DbUser).filter(DbUser.id == user_id)
-    user.update({
-        DbUser.username: request.username,
-        DbUser.email: request.email,
-        DbUser.password: Hash.bcrypt(request.password)
-    })
+def patch_user(request:UserPatchBase, user_id: int, db:Session):
+    if request.email:
+        try:
+            user = get_user_by_email(db, request.email)
+        except HTTPException:
+            user = None
+        if user and user.id != user_id:
+            raise HTTPException(status_code=400, detail="Email already exists")
+    updated_rows = (
+        db.query(DbUser)
+        .filter(DbUser.id == user_id)
+        .update(request.model_dump(exclude_unset=True))
+    )
+
+    if updated_rows == 0:
+        raise HTTPException(status_code=404, detail="User does not exist")
+
     db.commit()
-    return 'OK'
+    return db.query(DbUser).filter(DbUser.id == user_id).first()
 
 def delete_user(db:Session, user_id: int):
     user = db.query(DbUser).filter(DbUser.id == user_id).first()
