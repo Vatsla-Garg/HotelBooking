@@ -1,10 +1,12 @@
 from sqlalchemy.orm.session import Session
+from db.enums import Role
 from schemas import UserBase, UserPatchBase
-from db.models import DbUser
+from db.models import DbUser, DbGuest, DbHotelManager
 from db.hash import Hash
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 #create functionality to write to db
 def create_user(db:Session, request: UserBase):
+    #create user
     new_user = DbUser(
         username=request.username,
         email=request.email,
@@ -12,6 +14,20 @@ def create_user(db:Session, request: UserBase):
         role = request.role
     )
     db.add(new_user)
+    db.flush()   #gets user.id WITHOUT committing
+    #create role-specific profile
+    if request.role == Role.GUEST:
+        guest = DbGuest(user_id=new_user.id)
+        db.add(guest)
+
+    elif request.role == Role.HOTEL_MANAGER:
+        manager = DbHotelManager(user_id=new_user.id)
+        db.add(manager)
+
+    else:
+        raise HTTPException(status_code=status.HTTP_402, detail="Manager does not exist")
+
+    #commit everything together
     db.commit()
     db.refresh(new_user)
     return new_user
