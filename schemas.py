@@ -12,7 +12,17 @@ class UserBase(BaseModel):
     email: str = EmailStr
     password: str = Field(..., min_length=8)
     role: Role
+class HotelManager(BaseModel):
+    id: int
+    hotel_id: Optional[int]=None
+    model_config = ConfigDict(from_attributes=True)
 
+class Guest(BaseModel):
+    id: int
+    rating_sum: int
+    rating_count: int
+    booking_id: Optional[int]=None
+    model_config = ConfigDict(from_attributes=True)
 # schema for data leaving the API
 class UserDisplay(BaseModel):
     id: int
@@ -22,6 +32,8 @@ class UserDisplay(BaseModel):
     created_at: datetime
     updated_at: datetime
     status: UserStatus
+    manager: Optional[HotelManager] = None
+    guest:Optional[Guest] = None
     # Allow reading SQLAlchemy model attributes directly (Pydantic v2)
     model_config = ConfigDict(from_attributes=True)
 
@@ -30,6 +42,8 @@ class GetUserDisplay(BaseModel):
     email: str
     role: Role
     status: UserStatus
+    manager: Optional[HotelManager] = None
+    guest:Optional[Guest] = None
     model_config = ConfigDict(from_attributes=True)
 
 class UserPatchBase(BaseModel):
