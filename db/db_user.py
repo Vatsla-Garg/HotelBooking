@@ -45,12 +45,9 @@ def get_user_by_email(db:Session, email: str):
 
 def patch_user(request:UserPatchBase, user_id: int, db:Session):
     if request.email:
-        try:
-            user = get_user_by_email(db, request.email)
-        except HTTPException:
-            user = None
-        if user and user.id != user_id:
-            raise HTTPException(status_code=400, detail="Email already exists")
+            user= db.query(DbUser).filter(DbUser.email == request.email).first()
+            if user and user.id != user_id:
+                raise HTTPException(status_code=400, detail="Email already exists")
     updated_rows = (
         db.query(DbUser)
         .filter(DbUser.id == user_id)

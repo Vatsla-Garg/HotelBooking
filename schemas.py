@@ -38,6 +38,7 @@ class UserDisplay(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class GetUserDisplay(BaseModel):
+    id:int
     username: str
     email: str
     role: Role
