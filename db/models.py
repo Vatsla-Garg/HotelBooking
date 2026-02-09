@@ -25,9 +25,9 @@ class DbUser(Base):
 class DbHotelManager(Base):
     __tablename__ = "hotel_managers"
     id = Column(Integer, primary_key=True, index=True)
-    hotel_id = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),nullable=False)
     user = relationship("DbUser", back_populates="manager", primaryjoin="DbUser.id==DbHotelManager.user_id")
+    hotels = relationship("DbHotel", back_populates="manager")
 
 class DbGuest(Base):
     __tablename__ = "guests"
@@ -52,7 +52,9 @@ class DbHotel(Base):
     postcode = Column(String)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    #manager
+    #the many side
+    manager_id = Column(Integer, ForeignKey("hotel_managers.id"),nullable=False)
+    manager = relationship("DbHotelManager", back_populates="hotels")
     #rooms
     #feature
     __table_args__ = (

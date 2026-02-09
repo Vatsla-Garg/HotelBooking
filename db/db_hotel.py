@@ -2,12 +2,13 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm.session import Session
 from sqlalchemy.testing.provision import update_db_opts
 
-from db.models import DbHotel
-from schemas import HotelBase, RateBase
+from db.models import DbHotel, DbHotelManager
+from schemas import HotelBase, RateBase, UserBase
 from utils import is_unique_constraint_error, is_not_found
 
 
-def create_hotel(request: HotelBase, db: Session):
+def create_hotel(request: HotelBase, current_user: UserBase, db: Session):
+    manager = db.query(DbHotelManager).filter(DbHotelManager.user_id == current_user.id).first()
     new_hotel = DbHotel(
         hotel_name=request.hotel_name,
         description=request.description,
@@ -16,6 +17,8 @@ def create_hotel(request: HotelBase, db: Session):
         city =request.city,
         country =request.country,
         postcode =request.postcode,
+        manager = manager
+        #manager_id =manager.id
     )
     try:
         db.add(new_hotel)
@@ -29,11 +32,19 @@ def create_hotel(request: HotelBase, db: Session):
             #this clears the failed state in the session, resets the cnx
             raise HTTPException(status_code= status.HTTP_400_BAD_REQUEST, detail="Hotel name and address already exists")
 
-def get_hotel(hotel_id: int, db: Session):
+def get_hotel(hotel_id: int, current_user: UserBase,db: Session):
+    manager = db.query(DbHotelManager).filter(DbHotelManager.user_id == current_user.id).first()
     hotel = db.query(DbHotel).filter(DbHotel.id == hotel_id).first()
     if not hotel:
         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail="Hotel not found")
     return hotel
+
+def get_hotel_by_manager(current_user: UserBase,db: Session):
+    manager = db.query(DbHotelManager).filter(DbHotelManager.user_id == current_user.id).first()
+    if not manager:
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail="Manager not found")
+    hotels= db.query(DbHotel).filter(DbHotel.manager_id == manager.id).all()
+    return hotels
 
 def get_all_hotels(db: Session):
     hotels = db.query(DbHotel).all()

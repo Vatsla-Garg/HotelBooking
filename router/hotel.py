@@ -1,18 +1,24 @@
 from fastapi import HTTPException, FastAPI, Depends, status, APIRouter
 from sqlalchemy.orm import Session
 from typing import List
+
+from auth.oauth2 import get_current_user
 from db import db_hotel
 from db.database import get_db
 from db.enums import Rate
-from schemas import HotelDisplay, HotelBase, HotelPatchBase, RateBase
+from schemas import HotelDisplay, HotelBase, HotelPatchBase, RateBase, UserBase
 
 router=APIRouter(
     prefix="/hotel",
     tags=["hotel"]
 )
 @router.post("/", response_model = HotelDisplay, description="create a hotel", summary="create a new hotel")
-def create_hotel(request: HotelBase, db : Session = Depends(get_db)):
-    return db_hotel.create_hotel(request, db)
+def create_hotel(request: HotelBase, db : Session = Depends(get_db), current_user:UserBase=Depends(get_current_user)):
+    return db_hotel.create_hotel(request, current_user, db)
+
+@router.get("/hotels-by-manager", response_model=List[HotelDisplay], description="get hotels by manager", summary="get hotels by manager")
+def get_hotel_by_manager(db: Session = Depends(get_db),current_user:UserBase=Depends(get_current_user)):
+    return db_hotel.get_hotel_by_manager(current_user, db)
 
 @router.get("/", response_model=List[HotelDisplay], description="get all hotels", summary="get all hotels")
 def get_all_hotel(db : Session = Depends(get_db)):
