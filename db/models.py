@@ -1,7 +1,7 @@
 from sqlalchemy.orm import relationship
 
 from db.database import Base
-from sqlalchemy import Column, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, UniqueConstraint, func
 from sqlalchemy.sql.sqltypes import Integer, String
 from datetime import datetime
 from db.enums import Role
@@ -37,3 +37,25 @@ class DbGuest(Base):
     rating_sum = Column(Integer, default=0)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),nullable=False)
     user = relationship("DbUser", back_populates="guest",primaryjoin="DbUser.id==DbGuest.user_id")
+
+class DbHotel(Base):
+    __tablename__ = "hotels"
+    id = Column(Integer, primary_key=True, index=True)
+    hotel_name = Column(String)
+    description = Column(String)
+    rating_count = Column(Integer, default=0)
+    rating_sum = Column(Integer, default=0)
+    phone_number = Column(String)
+    street_name = Column(String)
+    city = Column(String)
+    country = Column(String)
+    postcode = Column(String)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    #manager
+    #rooms
+    #feature
+    __table_args__ = (
+        UniqueConstraint('hotel_name', 'street_name', 'city', name='uq_hotel_name_address'),
+    )
+
