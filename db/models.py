@@ -46,6 +46,6 @@ class DbBooking(Base):
     checkout_date = Column(DateTime)
     person_number = Column(Integer, default=1)
     #room_id = Column(Integer, ForeignKey("rooms.id", ondelete="CASCADE"),nullable=False)
-    booking_status = Column(Enum(Role), default=BookingStatus.CONFIRMED)
+    booking_status = Column(Enum(BookingStatus), default="CONFIRMED")
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)

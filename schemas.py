@@ -82,6 +82,6 @@ class BookingDisplay(BaseModel):
     checkout_date: datetime
     person_number: int
     #room_id: int
-    status: BookingStatus
+    booking_status: BookingStatus
     created_at: datetime
     updated_at: datetime
