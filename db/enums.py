@@ -7,3 +7,7 @@ class Role(str, Enum):
 class UserStatus(str, Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
+
+class BookingStatus(str, Enum):
+    CONFIRMED = "CONFIRMED"
+    CANCELED = "CANCELED"

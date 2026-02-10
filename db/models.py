@@ -3,7 +3,7 @@ from db.database import Base
 from sqlalchemy import Column, DateTime, Enum, ForeignKey
 from sqlalchemy.sql.sqltypes import Integer, String
 from datetime import datetime, timedelta
-from db.enums import Role
+from db.enums import Role, BookingStatus
 #define table schemas for the db using SQLAlchemy ORM established in Base=declarative_base()
 #every defined model should inherit from Base to be registered in the system's metadata
 
@@ -46,6 +46,6 @@ class DbBooking(Base):
     checkout_date = Column(DateTime)
     person_number = Column(Integer, default=1)
     #room_id = Column(Integer, ForeignKey("rooms.id", ondelete="CASCADE"),nullable=False)
-    status = Column(String, default="ACTIVE")
+    booking_status = Column(Enum(Role), default=BookingStatus.CONFIRMED)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)

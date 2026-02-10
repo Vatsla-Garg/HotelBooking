@@ -3,7 +3,7 @@ from typing import Literal
 #Pydantic is a data validation library
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import Optional
-from db.enums import UserStatus, Role
+from db.enums import UserStatus, Role, BookingStatus
 
 
 # schema for data entering the API
@@ -82,6 +82,6 @@ class BookingDisplay(BaseModel):
     checkout_date: datetime
     person_number: int
     #room_id: int
-    status: UserStatus
+    status: BookingStatus
     created_at: datetime
     updated_at: datetime
