@@ -1,9 +1,8 @@
 from sqlalchemy.orm import relationship
-
 from db.database import Base
 from sqlalchemy import Column, DateTime, Enum, ForeignKey
 from sqlalchemy.sql.sqltypes import Integer, String
-from datetime import datetime
+from datetime import datetime, timedelta
 from db.enums import Role
 #define table schemas for the db using SQLAlchemy ORM established in Base=declarative_base()
 #every defined model should inherit from Base to be registered in the system's metadata
@@ -37,3 +36,16 @@ class DbGuest(Base):
     rating_sum = Column(Integer, default=0)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),nullable=False)
     user = relationship("DbUser", back_populates="guest",primaryjoin="DbUser.id==DbGuest.user_id")
+
+class DbBooking(Base):
+    __tablename__ = "bookings"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    hotel_id = Column(Integer, ForeignKey("hotel_managers.id", ondelete="CASCADE"))
+    checkin_date = Column(DateTime)
+    checkout_date = Column(DateTime)
+    person_number = Column(Integer, default=1)
+    #room_id = Column(Integer, ForeignKey("rooms.id", ondelete="CASCADE"),nullable=False)
+    status = Column(String, default="ACTIVE")
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now)

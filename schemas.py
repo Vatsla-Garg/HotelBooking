@@ -66,3 +66,22 @@ class HotelManagerDisplay(BaseModel):
     email: str
     hotel_id: int
     model_config = ConfigDict(from_attributes=True)
+
+class BookingBase(BaseModel):
+    user_id: int
+    hotel_id: int
+    checkin_date: datetime
+    checkout_date: datetime
+    person_number: int
+
+class BookingDisplay(BaseModel):
+    id: int
+    user_id: int
+    hotel_id: int
+    checkin_date: datetime
+    checkout_date: datetime
+    person_number: int
+    #room_id: int
+    status: UserStatus
+    created_at: datetime
+    updated_at: datetime
