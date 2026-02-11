@@ -135,3 +135,10 @@ class HotelRateDisplay(BaseModel):
 
 class RateBase(BaseModel):
     rate: Rate
+
+class FeatureBase(BaseModel):
+    feature:str
+
+class FeatureDisplay(BaseModel):
+    id: int
+    feature: str

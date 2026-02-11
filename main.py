@@ -1,4 +1,5 @@
 from db.enums import Role
+from db.hash import Hash
 from db.models import DbUser
 
 print("MAIN FILE LOADED BOOKING PROJECT NOW")
@@ -6,7 +7,7 @@ print("MAIN FILE LOADED BOOKING PROJECT NOW")
 from fastapi import FastAPI
 from db import models
 from db.database import engine, SessionLocal
-from router import user, hotel,booking
+from router import user, hotel, booking, feature
 from auth import authentication
 app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
@@ -20,7 +21,7 @@ async def create_admin():
             admin = DbUser(
                 role = Role.ADMIN,
                 email = "admin@gmail.com",
-                password = "Azerty@123",
+                password = Hash.bcrypt("Azerty@123"),
                 username = "admin",
             )
             db.add(admin)
@@ -32,7 +33,7 @@ async def create_admin():
 # registers the routes into the main FastAPI app
 app.include_router(user.router)
 app.include_router(booking.router)
-#app.include_router(manager.router)
+app.include_router(feature.router)
 app.include_router(authentication.router)
 app.include_router(hotel.router)
 

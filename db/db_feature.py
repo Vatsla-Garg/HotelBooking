@@ -6,7 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 
-def add_new_feature(request: FeatureBase, db: Session):
+def add_new_feature(request: FeatureBase,current_user: UserBase, db: Session):
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code= status.HTTP_403_FORBIDDEN,detail="Unauthorized")
     new_feature = DBFeature(
         feature= request.feature
     )
@@ -21,22 +23,21 @@ def add_new_feature(request: FeatureBase, db: Session):
 
 def get_features(current_user: UserBase, db: Session):
     if current_user.role == Role.GUEST:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You do not have permission to access this resource")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Unauthorized")
     features = db.query(DBFeature).all()
     return features
 
 def get_feature_by_id(feature_id: int, current_user: UserBase, db: Session):
     if current_user.role == Role.GUEST:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You do not have permission to access this resource")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Unauthorized")
     feature = db.query(DBFeature).filter(DBFeature.id == feature_id).first()
     if not feature:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Feature not found")
     return feature
 
 def update_feature(feature_id: int, request: FeatureBase, current_user: UserBase, db: Session):
-    #only admin can update a feature
-    #if current_user.role == Role.ADMIN:
-    #    raise HTTPException(status_code= status.HTTP_403_FORBIDDEN,detail="You do not have permission to access this resource")
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code= status.HTTP_403_FORBIDDEN,detail="Unauthorized")
     feature = db.query(DBFeature).filter(DBFeature.id == feature_id).first()
     if not feature:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Feature not found")
@@ -46,9 +47,8 @@ def update_feature(feature_id: int, request: FeatureBase, current_user: UserBase
     return updated_feature
 
 def delete_feature(feature_id: int, current_user: UserBase, db: Session):
-    #only admin can delete a feature
-    #if current_user.role == Role.ADMIN:
-    #    raise HTTPException(status_code= status.HTTP_403_FORBIDDEN,detail="You do not have permission to access this resource")
+    if current_user.role != Role.ADMIN:
+        raise HTTPException(status_code= status.HTTP_403_FORBIDDEN,detail="Unauthorized")
     feature = db.query(DBFeature).filter(DBFeature.id == feature_id).first()
     if not feature:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Feature not found")
