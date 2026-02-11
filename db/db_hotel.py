@@ -32,8 +32,7 @@ def create_hotel(request: HotelBase, current_user: UserBase, db: Session):
             #this clears the failed state in the session, resets the cnx
             raise HTTPException(status_code= status.HTTP_400_BAD_REQUEST, detail="Hotel name and address already exists")
 
-def get_hotel(hotel_id: int, current_user: UserBase,db: Session):
-    manager = db.query(DbHotelManager).filter(DbHotelManager.user_id == current_user.id).first()
+def get_hotel(hotel_id: int, db: Session):
     hotel = db.query(DbHotel).filter(DbHotel.id == hotel_id).first()
     if not hotel:
         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail="Hotel not found")
