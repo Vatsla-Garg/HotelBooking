@@ -1,3 +1,9 @@
+# IDE
 /.idea
+# Virtual env
 /.venv
+# DataBase
 *.db
+# Python cache
+__pycache__/
+*.pyc
