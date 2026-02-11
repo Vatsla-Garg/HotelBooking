@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import Literal
+from datetime import datetime, date
+from typing import Literal, List
 #Pydantic is a data validation library
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import Optional
@@ -68,19 +68,20 @@ class HotelManagerDisplay(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class BookingBase(BaseModel):
-    user_id: int
     hotel_id: int
-    checkin_date: datetime
-    checkout_date: datetime
+    checkin_date: date
+    checkout_date: date
     person_number: int
+    room_number: int
 
 class BookingDisplay(BaseModel):
     id: int
     user_id: int
     hotel_id: int
-    checkin_date: datetime
-    checkout_date: datetime
+    checkin_date: date
+    checkout_date: date
     person_number: int
+    room_number: int
     #room_id: int
     booking_status: BookingStatus
     created_at: datetime
