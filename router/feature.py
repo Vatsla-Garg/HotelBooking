@@ -13,8 +13,8 @@ router = APIRouter(
 )
 
 @router.post("/", description="add a new feautre")
-def add_new_feature(request: FeatureBase, db: Session=Depends(get_db)):
-    return db_feature.add_new_feature(request, db)
+def add_new_feature(request: FeatureBase, current_user:UserBase=Depends(get_current_user),db: Session=Depends(get_db)):
+    return db_feature.add_new_feature(request, current_user, db)
 
 @router.get("/", response_model=List[FeatureDisplay])
 def get_features(current_user:UserBase=Depends(get_current_user),db: Session=Depends(get_db) ):
