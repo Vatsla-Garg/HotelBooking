@@ -1,10 +1,11 @@
-from datetime import datetime
-from typing import Literal
+from datetime import datetime, date
+from typing import Literal, List
 #Pydantic is a data validation library
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import Optional
-from db.enums import UserStatus, Role, Rate
+from db.enums import UserStatus, Role, Rate,BookingStatus
 from pydantic_extra_types.phone_numbers import PhoneNumber
+
 
 
 # schema for data entering the API
@@ -68,6 +69,27 @@ class HotelManagerDisplay(BaseModel):
     hotel_id: int
     model_config = ConfigDict(from_attributes=True)
 
+
+class BookingBase(BaseModel):
+    hotel_id: int
+    checkin_date: date
+    checkout_date: date
+    person_number: int
+    room_number: int
+
+class BookingDisplay(BaseModel):
+    id: int
+    user_id: int
+    hotel_id: int
+    checkin_date: date
+    checkout_date: date
+    person_number: int
+    room_number: int
+    #room_id: int
+    booking_status: BookingStatus
+    created_at: datetime
+    updated_at: datetime
+
 class HotelBase(BaseModel):
     hotel_name: str = Field(..., min_length=1, max_length=50)
     description: str = Field(..., min_length=1, max_length=500)
@@ -113,11 +135,3 @@ class HotelRateDisplay(BaseModel):
 
 class RateBase(BaseModel):
     rate: Rate
-
-class FeatureBase(BaseModel):
-    feature: str
-
-class FeatureDisplay(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    feature: str
