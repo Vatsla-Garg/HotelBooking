@@ -61,3 +61,7 @@ class DbHotel(Base):
         UniqueConstraint('hotel_name', 'street_name', 'city', name='uq_hotel_name_address'),
     )
 
+class DBFeature(Base):
+    __tablename__ = "features"
+    id = Column(Integer, primary_key=True, index=True)
+    feature = Column(String, unique=True)

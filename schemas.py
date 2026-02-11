@@ -114,3 +114,10 @@ class HotelRateDisplay(BaseModel):
 class RateBase(BaseModel):
     rate: Rate
 
+class FeatureBase(BaseModel):
+    feature: str
+
+class FeatureDisplay(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    feature: str
