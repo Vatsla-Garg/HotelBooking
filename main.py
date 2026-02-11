@@ -3,7 +3,7 @@ print("MAIN FILE LOADED BOOKING PROJECT NOW")
 from fastapi import FastAPI
 from db import models
 from db.database import engine
-from router import user, manager, hotel,booking
+from router import user, hotel,booking
 from auth import authentication
 app = FastAPI()
 
