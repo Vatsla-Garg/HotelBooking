@@ -8,9 +8,14 @@ class UserStatus(str, Enum):
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
 
+class BookingStatus(str, Enum):
+    CONFIRMED = "CONFIRMED"
+    CANCELED = "CANCELED"
+
 class Rate(int, Enum):
     ONE=1
     TWO=2
     THREE=3
     FOUR=4
     FIVE=5
+
