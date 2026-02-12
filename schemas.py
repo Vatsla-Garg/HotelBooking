@@ -114,7 +114,7 @@ class HotelBase(BaseModel):
     city: str
     country: str
     postcode: str
-    feature_ids: List[int]
+    feature_ids: Optional[List[int]]=None
 
 class HotelDisplay(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -131,7 +131,7 @@ class HotelDisplay(BaseModel):
     created_at: datetime
     updated_at: datetime
     manager: ManagerDisplay
-    features: List[FeatureDisplay]
+    features: Optional[List[FeatureDisplay]] = []
     #rooms
 
 

@@ -12,14 +12,17 @@ def create_hotel(request: HotelBase, current_user: UserBase, db: Session):
     if current_user.role == Role.GUEST:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     manager = db.query(DbHotelManager).filter(DbHotelManager.user_id == current_user.id).first()
-    features = db.query(DBFeature).filter(
-        DBFeature.id.in_(request.feature_ids)
-    ).all()
-    if len(features) != len(request.feature_ids):
-        raise HTTPException(
-            status_code=400,
-            detail="One or more feature IDs are invalid"
-        )
+    features = []
+    if request.feature_ids != None:
+        features = db.query(DBFeature).filter(
+            DBFeature.id.in_(request.feature_ids)
+        ).all()
+        if len(features) != len(request.feature_ids):
+            raise HTTPException(
+                status_code=400,
+                detail="One or more feature IDs are invalid"
+            )
+
     new_hotel = DbHotel(
         hotel_name=request.hotel_name,
         description=request.description,
@@ -29,7 +32,7 @@ def create_hotel(request: HotelBase, current_user: UserBase, db: Session):
         country =request.country,
         postcode =request.postcode,
         manager = manager,
-        features = features
+        features = features if features else []
     )
     try:
         db.add(new_hotel)

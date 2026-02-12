@@ -12,7 +12,7 @@ router=APIRouter(
     prefix="/hotel",
     tags=["hotel"]
 )
-@router.post("/", response_model = HotelDisplay, description="create a hotel", summary="create a new hotel")
+@router.post("/", response_model = HotelDisplay, status_code = status.HTTP_201_CREATED,description="create a hotel", summary="create a new hotel")
 def create_hotel(request: HotelBase, db : Session = Depends(get_db), current_user:UserBase=Depends(get_current_user)):
     return db_hotel.create_hotel(request, current_user, db)
 

@@ -12,7 +12,7 @@ router = APIRouter(
     tags=["feautres"]
 )
 
-@router.post("/", description="add a new feautre")
+@router.post("/", status_code= status.HTTP_201_CREATED,description="add a new feature")
 def add_new_feature(request: FeatureBase, current_user:UserBase=Depends(get_current_user),db: Session=Depends(get_db)):
     return db_feature.add_new_feature(request, current_user, db)
 
