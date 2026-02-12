@@ -1,5 +1,4 @@
 from datetime import date
-from sqlalchemy.orm import session
 from sqlalchemy.orm.session import Session
 from schemas import BookingBase
 from db.models import DbBooking
@@ -53,13 +52,15 @@ def get_all_bookings(db: Session):
 #get specific bookings
 
 def get_bookings(db:Session, user_id: int):
-    return db.query(DbBooking).filter(DbBooking.user_id == user_id)
+    return db.query(DbBooking).filter(DbBooking.user_id == user_id).all()
 
 #Delete booking
 
 def delete_booking(booking_id, db:Session, user_id: int):
-
-    booking = db.query(DbBooking).filter(DbBooking.id == booking_id and DbBooking.user_id == user_id).first()
+    booking = db.query(DbBooking).filter(
+        DbBooking.id == booking_id,
+        DbBooking.user_id == user_id
+    ).first()
     if not booking:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="booking does not exist")
 

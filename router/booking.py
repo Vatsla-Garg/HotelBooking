@@ -34,7 +34,7 @@ def get_all_bookings(db: Session = Depends(get_db)):
 
 #read specific the bookings
 
-@router.get('/{user_id}}',
+@router.get('/me',
             response_model=List[BookingDisplay],
             summary="Get user bookings",
             description="Get user all bookings"
@@ -53,4 +53,3 @@ def get_booking(db: Session = Depends(get_db), current_user: UserBase = Depends(
                )
 def delete_booking(booking_id: int, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
     return db_booking.delete_booking(booking_id, db, current_user.id)
-

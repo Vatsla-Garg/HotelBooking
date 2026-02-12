@@ -49,7 +49,7 @@ class DbBooking(Base):
     )
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    hotel_id = Column(Integer, ForeignKey("hotel_managers.id", ondelete="CASCADE"))
+    hotel_id = Column(Integer, ForeignKey("hotels.id", ondelete="CASCADE"))
     checkin_date = Column(Date)
     checkout_date = Column(Date)
     person_number = Column(Integer, default=1)
