@@ -143,6 +143,7 @@ class HotelPatchBase(BaseModel):
     city: Optional[str]= None
     country: Optional[str]= None
     postcode: Optional[str]= None
+    feature_ids: Optional[List[int]] = None
 
 class HotelRateDisplay(BaseModel):
     id: int

@@ -67,9 +67,21 @@ def update_hotel(hotel_id, request, current_user:UserBase, db: Session):
         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail="Hotel not found")
     if current_user.role == Role.HOTEL_MANAGER and hotel.manager_id != current_user.manager.id:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    #update features
+    features = db.query(DBFeature).filter(
+        DBFeature.id.in_(request.feature_ids)
+    ).all()
+    if len(features) != len(request.feature_ids):
+        raise HTTPException(
+            status_code=400,
+            detail="One or more feature IDs are invalid"
+        )
+    # db updates works only on table columns not relationships
+    hotel.features = features # assign ORM objects directly, SQLAlchemy tracks the relationship changes
     try:
-        db.query(DbHotel).filter(DbHotel.id == hotel_id).update(request.model_dump(exclude_unset=True))
-        db.commit()
+        updated_hotel = request.model_dump(exclude_unset=True, exclude={"feature_ids"})
+        db.query(DbHotel).filter(DbHotel.id == hotel_id).update(updated_hotel)
+        db.commit() #commit the ORM object, relationships included
         return db.query(DbHotel).filter(DbHotel.id == hotel_id).first()
     except IntegrityError:
         db.rollback()
