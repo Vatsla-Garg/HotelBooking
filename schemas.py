@@ -104,6 +104,12 @@ class RoomDisplay(RoomBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
+class RoomPatchBase(BaseModel):
+    room_number: Optional[str] = None
+    room_type: Optional[str] = None
+    price_per_night: Optional[float] = None
+    is_active: Optional[bool] = None
+
 class HotelBase(BaseModel):
     hotel_name: str = Field(..., min_length=1, max_length=50)
     description: str = Field(..., min_length=1, max_length=500)

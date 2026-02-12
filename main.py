@@ -7,7 +7,7 @@ print("MAIN FILE LOADED BOOKING PROJECT NOW")
 from fastapi import FastAPI
 from db import models
 from db.database import engine, SessionLocal
-from router import user, hotel, booking, feature
+from router import user, hotel, booking, feature, room
 from auth import authentication
 app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
@@ -34,6 +34,7 @@ async def create_admin():
 app.include_router(user.router)
 app.include_router(booking.router)
 app.include_router(feature.router)
+app.include_router(room.router)
 app.include_router(authentication.router)
 app.include_router(hotel.router)
 
