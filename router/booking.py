@@ -1,11 +1,10 @@
 from typing import List
-from fastapi import APIRouter,Depends, status, HTTPException
+from fastapi import APIRouter,Depends, status
 from sqlalchemy.orm import Session
 from auth.oauth2 import get_current_user
 from schemas import BookingDisplay, BookingBase, UserBase
 from db.database import get_db
 from db import db_booking
-from db.models import DbBooking, DbUser
 
 router = APIRouter(
     prefix="/booking",
@@ -20,7 +19,7 @@ router = APIRouter(
     description="Create a new booking with checkin date, checkout date, number of persons and rooms"
 )
 def create_booking(request: BookingBase, db:Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
-    return db_booking.create_booking(db, request, current_user.id)
+    return db_booking.create_booking(db, request, current_user)
 
 #read all the bookings
 

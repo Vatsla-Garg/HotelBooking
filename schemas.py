@@ -72,23 +72,37 @@ class HotelManagerDisplay(BaseModel):
 
 class BookingBase(BaseModel):
     hotel_id: int
+    room_id: int
     checkin_date: date
     checkout_date: date
     person_number: int
-    room_number: int
+    room_count: int = 1
 
 class BookingDisplay(BaseModel):
     id: int
     user_id: int
     hotel_id: int
+    room_id: int
     checkin_date: date
     checkout_date: date
     person_number: int
-    room_number: int
-    #room_id: int
+    room_count: int
+    total_price: float
     booking_status: BookingStatus
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class RoomBase(BaseModel):
+    hotel_id: int
+    room_number: str
+    room_type: Optional[str] = None
+    price_per_night: float
+    is_active: bool = True
+
+class RoomDisplay(RoomBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
 
 class HotelBase(BaseModel):
     hotel_name: str = Field(..., min_length=1, max_length=50)

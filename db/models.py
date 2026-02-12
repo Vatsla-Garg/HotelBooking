@@ -1,7 +1,7 @@
 from sqlalchemy.orm import relationship
 from db.database import Base
 from sqlalchemy import Column, DateTime, Enum, ForeignKey, UniqueConstraint, func
-from sqlalchemy.sql.sqltypes import Integer, String,Date
+from sqlalchemy.sql.sqltypes import Integer, String, Date, Boolean, Float
 from datetime import datetime
 from db.enums import Role, BookingStatus
 #define table schemas for the db using SQLAlchemy ORM established in Base=declarative_base()
@@ -37,6 +37,20 @@ class DbGuest(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"),nullable=False)
     user = relationship("DbUser", back_populates="guest",primaryjoin="DbUser.id==DbGuest.user_id")
 
+class DbRoom(Base):
+    __tablename__ = "rooms"
+    __table_args__ = (
+        UniqueConstraint("hotel_id", "room_number", name="uq_hotel_room_number"),
+    )
+    id = Column(Integer, primary_key=True, index=True)
+    hotel_id = Column(Integer, ForeignKey("hotels.id", ondelete="CASCADE"), nullable=False)
+    room_number = Column(String, nullable=False)
+    room_type = Column(String, nullable=True)
+    price_per_night = Column(Float, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    hotel = relationship("DbHotel", back_populates="rooms")
+    bookings = relationship("DbBooking", back_populates="room")
+
 class DbBooking(Base):
     __tablename__ = "bookings"
     __table_args__ = (
@@ -50,14 +64,16 @@ class DbBooking(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     hotel_id = Column(Integer, ForeignKey("hotels.id", ondelete="CASCADE"))
+    room_id = Column(Integer, ForeignKey("rooms.id", ondelete="CASCADE"), nullable=False)
     checkin_date = Column(Date)
     checkout_date = Column(Date)
     person_number = Column(Integer, default=1)
-    room_number = Column(Integer, default=1)
-    #room_id = Column(Integer, ForeignKey("rooms.id", ondelete="CASCADE"),nullable=False)
+    room_count = Column(Integer, default=1)
+    total_price = Column(Float, nullable=False, default=0)
     booking_status = Column(Enum(BookingStatus), default="CONFIRMED")
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)
+    room = relationship("DbRoom", back_populates="bookings")
 
 class DbHotel(Base):
     __tablename__ = "hotels"
@@ -76,7 +92,7 @@ class DbHotel(Base):
     #the many side
     manager_id = Column(Integer, ForeignKey("hotel_managers.id"),nullable=False)
     manager = relationship("DbHotelManager", back_populates="hotels")
-    #rooms
+    rooms = relationship("DbRoom", back_populates="hotel", cascade="all, delete-orphan")
     #feature
     __table_args__ = (
         UniqueConstraint('hotel_name', 'street_name', 'city', name='uq_hotel_name_address'),
