@@ -39,6 +39,17 @@ class UserDisplay(BaseModel):
     # Allow reading SQLAlchemy model attributes directly (Pydantic v2)
     model_config = ConfigDict(from_attributes=True)
 
+class UserSummaryDisplay(BaseModel):
+    id: int
+    username: str
+    email: str
+
+class ManagerDisplay(BaseModel):
+    id: int
+    user: UserSummaryDisplay
+
+    model_config = ConfigDict(from_attributes=True)
+
 class GetUserDisplay(BaseModel):
     id:int
     username: str
@@ -53,21 +64,6 @@ class UserPatchBase(BaseModel):
     username: Optional[str] = None
     email: Optional[str]= None
     status:Optional[UserStatus]= None
-
-
-class HotelManagerBase(BaseModel):
-    username: str = Field(..., min_length=1, max_length=50)
-    email: str = EmailStr
-    password: str = Field(..., min_length=8)
-    hotel_id: int
-
-
-class HotelManagerDisplay(BaseModel):
-    id: int
-    username: str
-    email: str
-    hotel_id: int
-    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingBase(BaseModel):
@@ -118,8 +114,10 @@ class HotelBase(BaseModel):
     city: str
     country: str
     postcode: str
+    feature_ids: List[int]
 
 class HotelDisplay(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     hotel_name: str
     description: str
@@ -132,10 +130,10 @@ class HotelDisplay(BaseModel):
     rating_sum: int
     created_at: datetime
     updated_at: datetime
-    #manger
-    #features
+    manager: ManagerDisplay
+    features: List[FeatureDisplay]
     #rooms
-    model_config = ConfigDict(from_attributes=True)
+
 
 class HotelPatchBase(BaseModel):
     hotel_name: Optional[str]= Field(default=None , min_length=1, max_length=50)

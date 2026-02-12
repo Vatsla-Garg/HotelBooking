@@ -1,6 +1,6 @@
 from sqlalchemy.orm import relationship
 from db.database import Base
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, UniqueConstraint, func
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, UniqueConstraint, func, Table
 from sqlalchemy.sql.sqltypes import Integer, String, Date, Boolean, Float
 from datetime import datetime
 from db.enums import Role, BookingStatus
@@ -75,6 +75,14 @@ class DbBooking(Base):
     updated_at = Column(DateTime, default=datetime.now)
     room = relationship("DbRoom", back_populates="bookings")
 
+# Association table
+hotel_feature = Table(
+"hotel_feature",
+Base.metadata,
+Column("hotel_id", Integer, ForeignKey("hotels.id")),
+Column("feature_id", Integer, ForeignKey("features.id")),
+)
+
 class DbHotel(Base):
     __tablename__ = "hotels"
     id = Column(Integer, primary_key=True, index=True)
@@ -92,8 +100,13 @@ class DbHotel(Base):
     #the many side
     manager_id = Column(Integer, ForeignKey("hotel_managers.id"),nullable=False)
     manager = relationship("DbHotelManager", back_populates="hotels")
+    #Relations
     rooms = relationship("DbRoom", back_populates="hotel", cascade="all, delete-orphan")
-    #feature
+    features = relationship(
+        "DBFeature",
+        secondary=hotel_feature,
+        back_populates="hotels"
+    )
     __table_args__ = (
         UniqueConstraint('hotel_name', 'street_name', 'city', name='uq_hotel_name_address'),
     )
@@ -102,3 +115,12 @@ class DBFeature(Base):
     __tablename__ = "features"
     id = Column(Integer, primary_key=True, index=True)
     feature = Column(String, unique=True)
+
+    #Relations
+    hotels = relationship(
+        "DbHotel",
+        secondary=hotel_feature,
+        back_populates="features"
+    )
+
+

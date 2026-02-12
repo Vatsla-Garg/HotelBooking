@@ -29,16 +29,16 @@ def get_hotel(hotel_id: int, db: Session = Depends(get_db)):
     return db_hotel.get_hotel(hotel_id, db)
 
 @router.patch("/{hotel_id}", response_model= HotelDisplay, description="update a hotel by id", summary="update a hotel")
-def update_hotel(hotel_id: int, request: HotelPatchBase, db: Session = Depends(get_db)):
-    return db_hotel.update_hotel(hotel_id, request, db)
+def update_hotel(hotel_id: int, request: HotelPatchBase, current_user:UserBase=Depends(get_current_user), db: Session = Depends(get_db)):
+    return db_hotel.update_hotel(hotel_id, request, current_user, db)
 
 @router.patch("/rate/{hotel_id}", description="rate a hotel by id", summary="rate a hotel")
-def rate_hotel(hotel_id: int, request:RateBase, db: Session = Depends(get_db)):
-    return db_hotel.rate_hotel(hotel_id, request, db)
+def rate_hotel(hotel_id: int, request:RateBase, current_user:UserBase=Depends(get_current_user),db: Session = Depends(get_db)):
+    return db_hotel.rate_hotel(hotel_id, request, current_user, db)
 
 @router.delete( "{/hotel_id}",status_code=status.HTTP_204_NO_CONTENT, responses={status.HTTP_404_NOT_FOUND : {'description': "hotel does not exist"}, status.HTTP_204_NO_CONTENT:{"description":"hotel deleted successfully"}},description="delete a hotel by id", summary="delete a hotel")
-def delete_hotel(hotel_id: int, db: Session = Depends(get_db)):
-    return db_hotel.delete_hotel(hotel_id, db)
+def delete_hotel(hotel_id: int, current_user:UserBase=Depends(get_current_user), db: Session = Depends(get_db)):
+    return db_hotel.delete_hotel(hotel_id, current_user, db)
 
 @router.get("/rating/{hotel_id}", description="get a hotel rating by id", summary="get a hotel rating")
 def get_rating(hotel_id: int, db: Session = Depends(get_db)):
