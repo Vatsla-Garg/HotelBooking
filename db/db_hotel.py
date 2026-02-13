@@ -12,14 +12,17 @@ def create_hotel(request: HotelBase, current_user: UserBase, db: Session):
     if current_user.role == Role.GUEST:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     manager = db.query(DbHotelManager).filter(DbHotelManager.user_id == current_user.id).first()
-    features = db.query(DBFeature).filter(
-        DBFeature.id.in_(request.feature_ids)
-    ).all()
-    if len(features) != len(request.feature_ids):
-        raise HTTPException(
-            status_code=400,
-            detail="One or more feature IDs are invalid"
-        )
+    features = []
+    if request.feature_ids is not None:
+        features = db.query(DBFeature).filter(
+            DBFeature.id.in_(request.feature_ids)
+        ).all()
+        if len(features) != len(request.feature_ids):
+            raise HTTPException(
+                status_code=400,
+                detail="One or more feature IDs are invalid"
+            )
+
     new_hotel = DbHotel(
         hotel_name=request.hotel_name,
         description=request.description,
@@ -29,7 +32,7 @@ def create_hotel(request: HotelBase, current_user: UserBase, db: Session):
         country =request.country,
         postcode =request.postcode,
         manager = manager,
-        features = features
+        features = features if features else []
     )
     try:
         db.add(new_hotel)
@@ -68,16 +71,17 @@ def update_hotel(hotel_id, request, current_user:UserBase, db: Session):
     if current_user.role == Role.HOTEL_MANAGER and hotel.manager_id != current_user.manager.id:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     #update features
-    features = db.query(DBFeature).filter(
-        DBFeature.id.in_(request.feature_ids)
-    ).all()
-    if len(features) != len(request.feature_ids):
-        raise HTTPException(
-            status_code=400,
-            detail="One or more feature IDs are invalid"
-        )
+    if request.feature_ids is not None:
+        features = db.query(DBFeature).filter(
+            DBFeature.id.in_(request.feature_ids)
+        ).all()
+        if len(features) != len(request.feature_ids):
+            raise HTTPException(
+                status_code=400,
+                detail="One or more feature IDs are invalid"
+            )
     # db updates works only on table columns not relationships
-    hotel.features = features # assign ORM objects directly, SQLAlchemy tracks the relationship changes
+        hotel.features = features # assign ORM objects directly, SQLAlchemy tracks the relationship changes
     try:
         updated_hotel = request.model_dump(exclude_unset=True, exclude={"feature_ids"})
         db.query(DbHotel).filter(DbHotel.id == hotel_id).update(updated_hotel)
