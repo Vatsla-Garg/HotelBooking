@@ -1,24 +1,29 @@
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from db.models import DbUser, DbHotel, DbHotelManager, DbRoom
+from db.enums import Role
+from db.hash import Hash
+from db.models import DbUser
 from main import app
-import random
 from datetime import date, timedelta
-from db.database import Base, get_db
+from db.database import Base, get_db, SessionLocal, engine
 
 #In-memory SQLite for tests
 #1)setup test DB
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db" # file-based SQLite
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Test database in memory
+TEST_DB_URL = "sqlite:///:memory:"
+test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False}).connect()
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
+# Replace engine globally
+engine.dispose()
+engine = test_engine
+SessionLocal.configure(bind=test_engine)
 
 # Recreate tables in test DB
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
+Base.metadata.drop_all(bind=test_engine)
+Base.metadata.create_all(bind=test_engine)
 
 #2) override dependency
 def override_get_db():
@@ -28,23 +33,36 @@ def override_get_db():
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_get_db
+app.dependency_overrides[get_db] = override_get_db # This affects only FastAPI dependency injection
 
 #Create TestClient
 client = TestClient(app)
 
-def login():
-    email = "malak@gmail.com"
+@pytest.fixture
+def guest_login():
+    email = "guest@gmail.com"
     password = "Azerty@123"
-    response = client.post("/token", data={"username": email, "password": password})
-    token = response.json().get("access_token")
-    if token:
-        return token
-
     create_response = client.post(
         "/user/",
         json={
-            "username": "Malak",
+            "username": "guest",
+            "email": email,
+            "password": password,
+            "role": "GUEST"
+        }
+    )
+    assert create_response.status_code == 200
+    response = client.post("/token", data={"username": email, "password": password})
+    return response.json().get("access_token")
+
+@pytest.fixture
+def manager_login():
+    email = "manager@gmail.com"
+    password = "Azerty@123"
+    create_response = client.post(
+        "/user/",
+        json={
+            "username": "Manager",
             "email": email,
             "password": password,
             "role": "HOTEL_MANAGER"
@@ -54,91 +72,74 @@ def login():
     response = client.post("/token", data={"username": email, "password": password})
     return response.json().get("access_token")
 
-def generate_random_hotel_name():
-    hotel_names=["Radisson", "IBIS", "HolidayInn"]
-    rand_index = random.randint(0, len(hotel_names)-1)
-    rand_int = random.randint(1, 100)
-    hotel = hotel_names[rand_index]+str(rand_int)
-    return hotel
+@pytest.fixture
+def admin_login():
+    db = TestingSessionLocal()
+    admin = DbUser(
+                role=Role.ADMIN,
+                email="admin@gmail.com",
+                password=Hash.bcrypt("Azerty@123"),
+                username="admin",
+            )
+    db.add(admin)
+    db.commit()
+    db.refresh(admin)
+    response = client.post("/token", data={"username": admin.email, "password": "Azerty@123"})
+    return response.json().get("access_token")
 
-def generate_random_email():
-    email = "malak"+ str(random.randint(1, 100))+"@gmail.com"
-    return email
+@pytest.fixture
+def create_features(admin_login):
+    token = admin_login
+    response = client.post(
+                "/features/",
+                json={
+                    "feature": "Wifi"
+                },
+                headers={"Authorization": f"Bearer {token}"}
+                )
+    return  response
 
-def auth_headers(token: str):
-    return {"Authorization": f"Bearer {token}"}
-
-def create_user_and_login(role: str):
-    email = f"{role.lower()}_{random.randint(1000,999999)}@example.com"
-    password = "Azerty@123"
-    create_response = client.post(
-        "/user/",
-        json={
-            "username": role.lower(),
-            "email": email,
-            "password": password,
-            "role": role
-        }
-    )
-    assert create_response.status_code == 200
-    login_response = client.post(
-        "/token",
-        data={"username": email, "password": password}
-    )
-    assert login_response.status_code == 200
-    return create_response.json(), login_response.json()["access_token"]
-
-def create_hotel_and_room():
-    _, manager_token = create_user_and_login("HOTEL_MANAGER")
-    hotel_name = generate_random_hotel_name()
-    hotel_response = client.post(
+@pytest.fixture
+def create_hotel(manager_login, create_features):
+    token = manager_login
+    response = client.post(
         "/hotel/",
         json={
-            "hotel_name": hotel_name,
+            "hotel_name": "HolidayInn",
             "description": "friendly",
             "phone_number": "+21623228230",
             "street_name": "Boterbloem straat",
             "city": "weert",
             "country": "netherlands",
-            "postcode": "116 cd"
+            "postcode": "116 CD",
+            "feature_ids": [1]
         },
-        headers=auth_headers(manager_token)
-    )
-    assert hotel_response.status_code == 200
-    hotel_id = hotel_response.json()["id"]
-
-    db = TestingSessionLocal()
-    try:
-        room = DbRoom(
-            hotel_id=hotel_id,
-            room_number=f"R-{random.randint(100, 999)}",
-            room_type="STANDARD",
-            price_per_night=120.0,
-            is_active=True
-        )
-        db.add(room)
-        db.commit()
-        db.refresh(room)
-        return hotel_id, room.id
-    finally:
-        db.close()
-
-def test_create_hotel_manager():
-    email = generate_random_email()
-    response = client.post(
-        "/user/",
-        json={
-                "username": "Malak",
-                "email": email,
-                "password": "Azerty@123",
-                "role": "HOTEL_MANAGER"
+        headers={
+            "Authorization": f"Bearer {token}"
         }
     )
-    assert response.status_code == 200
+    return response, token
 
-def test_get_hotels():
-    response = client.get("/hotel/")
-    assert response.status_code == 200
+
+@pytest.fixture
+def create_rooms_for_hotel(create_hotel):
+    response, token = create_hotel
+    pass
+
+def test_admin_created_on_startup():
+    with TestClient(app):  # triggers startup event
+        db = TestingSessionLocal()
+        try:
+            admin = db.query(DbUser).filter(DbUser.role == Role.ADMIN).first()
+            assert admin is not None
+            assert admin.email == "admin@gmail.com"
+            assert admin.username == "admin"
+        finally:
+            db.close()
+
+def test_admin_login(admin_login):
+    response = admin_login
+    assert response is not None
 
 def test_auth_error():
     response = client.post("/token",
@@ -149,74 +150,75 @@ def test_auth_error():
     #message = response.json().get("detail")[0].get("msg")
     #assert message == "field required"
 
-def test_auth_success():
-    token = login()
-    assert token is not None
 
-def test_post_hotel():
-    token = login()
-    hotel_name = generate_random_hotel_name()
-    response = client.post(
-        "/hotel/",
-        json={
-            "hotel_name": hotel_name,
-            "description": "friendly",
-            "phone_number": "+21623228230",
-            "street_name": "Boterbloem straat",
-            "city": "weert",
-            "country": "netherlands",
-            "postcode": "116 cd"
-    },
-        headers={
-            "Authorization": f"Bearer {token}"
-        }
-    )
+# Features tests
+def test_add_feature(create_features):
+    response = create_features
+    assert response.status_code == 201
+
+# Booking tests
+def test_post_hotel(create_hotel):
+    response, token = create_hotel
+    assert response.status_code == 201
+
+def test_get_hotels(create_hotel):
+    response, token = create_hotel
+    assert response.status_code == 201
+    response = client.get("/hotel/")
     assert response.status_code == 200
-    #assert response.json()["hotel_name"] == hotel_name
+    data = response.json()
+    assert len(data) == 1
 
-def test_get_hotels_by_manager():
-    token = login()
+def test_get_hotels_by_manager(create_hotel):
+    response, token = create_hotel
     response = client.get(
         "/hotel/hotels-by-manager",
     headers={
             "Authorization": f"Bearer {token}"
     })
     assert response.status_code == 200
-def test_get_hotel_by_id():
+
+def test_get_hotel_by_id(create_hotel):
     hotel_id = 1
     response = client.get(f"/hotel/{hotel_id}")
     assert response.status_code == 200
-def test_update_hotel():
+
+def test_update_hotel(create_hotel):
+    response, token = create_hotel
+    assert response.status_code == 201
     payload = {"hotel_name": "New Hotel Name"}
     hotel_id = 1
     response = client.patch(
         f"/hotel/{hotel_id}",
-        json = payload
+        json = payload,
+        headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
     assert response.json().get("hotel_name") == "New Hotel Name"
 
-def test_rate_hotel():
+def test_rate_hotel(create_hotel, guest_login):
+    response, token = create_hotel
+    assert response.status_code == 201
+    token = guest_login
     payload = {"rate": 5}
     hotel_id = 1
     response = client.patch(
         f"/hotel/rate/{hotel_id}",
-        json = payload
+        json = payload,
+        headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
-    #assert response.json().get("rating_sum") == 5
-    #assert response.json().get("rating_count") == 1
-
-def test_get_hotel_rates():
-    hotel_id = 1
+    assert response.json().get("rating_sum") == 5
+    assert response.json().get("rating_count") == 1
     response = client.get(f"/hotel/rating/{hotel_id}")
     assert response.status_code == 200
 
 def test_delete_hotel():
     pass
 
-def test_booking_requires_authentication():
-    hotel_id, room_id = create_hotel_and_room()
+# Booking tests
+def test_booking_requires_authentication(create_hotel_and_room):
+    hotel_id, room_id = create_hotel_and_room
     checkin = date.today() + timedelta(days=3)
     checkout = date.today() + timedelta(days=5)
     response = client.post(
@@ -232,9 +234,9 @@ def test_booking_requires_authentication():
     )
     assert response.status_code == 401
 
-def test_booking_rejects_non_guest():
-    hotel_id, room_id = create_hotel_and_room()
-    _, manager_token = create_user_and_login("HOTEL_MANAGER")
+def test_booking_rejects_non_guest(create_hotel_and_room, manager_login):
+    hotel_id, room_id = create_hotel_and_room
+    _, manager_token = manager_login
     checkin = date.today() + timedelta(days=3)
     checkout = date.today() + timedelta(days=5)
     response = client.post(
@@ -247,13 +249,13 @@ def test_booking_rejects_non_guest():
             "person_number": 1,
             "room_count": 1
         },
-        headers=auth_headers(manager_token)
+        headers={"Authorization": f"Bearer {manager_token}"}
     )
     assert response.status_code == 403
 
-def test_booking_overlap_rejected():
-    hotel_id, room_id = create_hotel_and_room()
-    _, guest_token = create_user_and_login("GUEST")
+def test_booking_overlap_rejected(create_hotel_and_room, guest_login):
+    hotel_id, room_id = create_hotel_and_room
+    _, guest_token = guest_login
     first_checkin = date.today() + timedelta(days=7)
     first_checkout = date.today() + timedelta(days=10)
     first_response = client.post(
@@ -266,7 +268,7 @@ def test_booking_overlap_rejected():
             "person_number": 2,
             "room_count": 1
         },
-        headers=auth_headers(guest_token)
+        headers={"Authorization": f"Bearer {guest_token}"}
     )
     assert first_response.status_code == 200
 
@@ -280,14 +282,14 @@ def test_booking_overlap_rejected():
             "person_number": 2,
             "room_count": 1
         },
-        headers=auth_headers(guest_token)
+        headers={"Authorization": f"Bearer {guest_token}"}
     )
     assert overlap_response.status_code == 400
     assert "overlap" in overlap_response.json().get("detail", "").lower()
 
-def test_booking_status_confirmed_and_total_price():
-    hotel_id, room_id = create_hotel_and_room()
-    _, guest_token = create_user_and_login("GUEST")
+def test_booking_status_confirmed_and_total_price(create_hotel_and_room, guest_login):
+    hotel_id, room_id = create_hotel_and_room
+    _, guest_token = guest_login
     checkin = date.today() + timedelta(days=12)
     checkout = date.today() + timedelta(days=15)
     response = client.post(
@@ -300,7 +302,7 @@ def test_booking_status_confirmed_and_total_price():
             "person_number": 2,
             "room_count": 2
         },
-        headers=auth_headers(guest_token)
+        headers={"Authorization": f"Bearer {guest_token}"}
     )
     assert response.status_code == 200
     data = response.json()

@@ -8,8 +8,8 @@ from typing import List
 from sqlalchemy.orm import Session
 
 router = APIRouter(
-    prefix="/feautres",
-    tags=["feautres"]
+    prefix="/features",
+    tags=["features"]
 )
 
 @router.post("/", status_code= status.HTTP_201_CREATED,description="add a new feature")
