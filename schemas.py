@@ -72,7 +72,6 @@ class BookingBase(BaseModel):
     checkin_date: date
     checkout_date: date
     person_number: int
-    room_count: int = 1
 
 class BookingDisplay(BaseModel):
     id: int
@@ -82,7 +81,6 @@ class BookingDisplay(BaseModel):
     checkin_date: date
     checkout_date: date
     person_number: int
-    room_count: int
     total_price: float
     booking_status: BookingStatus
     created_at: datetime

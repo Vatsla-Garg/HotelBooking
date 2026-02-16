@@ -14,16 +14,12 @@ def create_booking(db: Session, request: BookingBase, current_user) :
             detail="Only guests can create bookings"
         )
 
-    if request.person_number < 1 or request.person_number > 3:
+    if request.person_number < 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Person number should be greater than 0 and less than or equal to 3"
+            detail="Person number should be greater than 0"
         )
-    if request.room_count < 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Room count should be greater than 0"
-        )
+
     if request.checkin_date > request.checkout_date:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -38,13 +34,18 @@ def create_booking(db: Session, request: BookingBase, current_user) :
     room = db.query(DbRoom).filter(
         DbRoom.id == request.room_id,
         DbRoom.hotel_id == request.hotel_id,
-        DbRoom.available.is_(True)
     ).first()
     if not room:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Room is unavailable for this hotel"
         )
+    if not room.available:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Room is not available"
+        )
+
 
     overlapping_booking = db.query(DbBooking).filter(
         DbBooking.room_id == request.room_id,
@@ -59,7 +60,7 @@ def create_booking(db: Session, request: BookingBase, current_user) :
         )
 
     nights = (request.checkout_date - request.checkin_date).days
-    total_price = float(nights * room.price_per_night * request.room_count)
+    total_price = float(nights * room.price_per_night * 1)
 
     new_booking = DbBooking(
         user_id=current_user.id,
@@ -68,7 +69,6 @@ def create_booking(db: Session, request: BookingBase, current_user) :
         checkin_date = request.checkin_date,
         checkout_date = request.checkout_date,
         person_number = request.person_number,
-        room_count=request.room_count,
         total_price=total_price,
         booking_status=BookingStatus.CONFIRMED
     )
@@ -98,14 +98,53 @@ def get_bookings(db:Session, user_id: int):
 
 #Delete booking
 
-def delete_booking(booking_id, db:Session, user_id: int):
+def delete_booking(booking_id, db:Session, user):
+    if user.role != Role.ADMIN:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not authorized")
+    if user.role == Role.ADMIN:
+        booking = db.query(DbBooking).filter(
+            DbBooking.id == booking_id
+        ).first()
+        if not booking:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="booking does not exist")
+        db.delete(booking)
+        db.commit()
+
+    return {"message": "Entry deleted successfully"}
+
+
+def cancel_booking(db: Session, booking_id: int, current_user):
+
+    if current_user.role != Role.GUEST:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only guests can cancel bookings"
+        )
+
     booking = db.query(DbBooking).filter(
         DbBooking.id == booking_id,
-        DbBooking.user_id == user_id
+        DbBooking.user_id == current_user.id
     ).first()
-    if not booking:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="booking does not exist")
 
-    db.delete(booking)
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Booking does not exist"
+        )
+
+
+    if booking.booking_status == BookingStatus.CANCELLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Booking is already cancelled"
+        )
+
+    booking.booking_status = BookingStatus.CANCELLED
+
+    room = db.query(DbRoom).filter(DbRoom.id == booking.room_id).first()
+    if room:
+        room.available = True
+
     db.commit()
-    return {"message": "Entry deleted successfully"}
+    db.refresh(booking)
+    return booking
