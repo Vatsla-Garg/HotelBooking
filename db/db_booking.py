@@ -38,7 +38,7 @@ def create_booking(db: Session, request: BookingBase, current_user) :
     room = db.query(DbRoom).filter(
         DbRoom.id == request.room_id,
         DbRoom.hotel_id == request.hotel_id,
-        DbRoom.is_active.is_(True)
+        DbRoom.available.is_(True)
     ).first()
     if not room:
         raise HTTPException(

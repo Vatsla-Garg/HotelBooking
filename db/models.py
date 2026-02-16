@@ -47,7 +47,7 @@ class DbRoom(Base):
     room_number = Column(String, nullable=False)
     room_type = Column(String, nullable=True)
     price_per_night = Column(Float, nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
+    available = Column(Boolean, default=True, nullable=False)
     hotel = relationship("DbHotel", back_populates="rooms")
     bookings = relationship("DbBooking", back_populates="room")
 
@@ -122,5 +122,3 @@ class DBFeature(Base):
         secondary=hotel_feature,
         back_populates="features"
     )
-
-
