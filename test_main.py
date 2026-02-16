@@ -38,52 +38,61 @@ app.dependency_overrides[get_db] = override_get_db # This affects only FastAPI d
 #Create TestClient
 client = TestClient(app)
 
-@pytest.fixture
-def guest_login():
-    email = "guest@gmail.com"
-    password = "Azerty@123"
-    create_response = client.post(
+
+@pytest.fixture(autouse=True)
+def reset_test_db():
+    Base.metadata.drop_all(bind=test_engine)
+    Base.metadata.create_all(bind=test_engine)
+
+
+def _ensure_user(email: str, username: str, password: str, role: str):
+    response = client.post(
         "/user/",
         json={
-            "username": "guest",
+            "username": username,
             "email": email,
             "password": password,
-            "role": "GUEST"
-        }
+            "role": role,
+        },
     )
-    assert create_response.status_code == 200
-    response = client.post("/token", data={"username": email, "password": password})
-    return response.json().get("access_token")
+    assert response.status_code in (200, 400)
+
+    login_response = client.post("/token", data={"username": email, "password": password})
+    assert login_response.status_code == 200
+    return login_response.json().get("access_token")
+
+@pytest.fixture
+def guest_login():
+    return _ensure_user(
+        email="guest@gmail.com",
+        username="guest",
+        password="Azerty@123",
+        role="GUEST",
+    )
 
 @pytest.fixture
 def manager_login():
-    email = "manager@gmail.com"
-    password = "Azerty@123"
-    create_response = client.post(
-        "/user/",
-        json={
-            "username": "Manager",
-            "email": email,
-            "password": password,
-            "role": "HOTEL_MANAGER"
-        }
+    return _ensure_user(
+        email="manager@gmail.com",
+        username="Manager",
+        password="Azerty@123",
+        role="HOTEL_MANAGER",
     )
-    assert create_response.status_code == 200
-    response = client.post("/token", data={"username": email, "password": password})
-    return response.json().get("access_token")
 
 @pytest.fixture
 def admin_login():
     db = TestingSessionLocal()
-    admin = DbUser(
-                role=Role.ADMIN,
-                email="admin@gmail.com",
-                password=Hash.bcrypt("Azerty@123"),
-                username="admin",
-            )
-    db.add(admin)
-    db.commit()
-    db.refresh(admin)
+    admin = db.query(DbUser).filter(DbUser.email == "admin@gmail.com").first()
+    if not admin:
+        admin = DbUser(
+            role=Role.ADMIN,
+            email="admin@gmail.com",
+            password=Hash.bcrypt("Azerty@123"),
+            username="admin",
+        )
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
     response = client.post("/token", data={"username": admin.email, "password": "Azerty@123"})
     return response.json().get("access_token")
 
@@ -97,11 +106,13 @@ def create_features(admin_login):
                 },
                 headers={"Authorization": f"Bearer {token}"}
                 )
-    return  response
+    assert response.status_code == 201
+    return response.json()["id"]
 
 @pytest.fixture
 def create_hotel(manager_login, create_features):
     token = manager_login
+    feature_id = create_features
     response = client.post(
         "/hotel/",
         json={
@@ -112,7 +123,7 @@ def create_hotel(manager_login, create_features):
             "city": "weert",
             "country": "netherlands",
             "postcode": "116 CD",
-            "feature_ids": [1]
+            "feature_ids": [feature_id]
         },
         headers={
             "Authorization": f"Bearer {token}"
@@ -125,6 +136,28 @@ def create_hotel(manager_login, create_features):
 def create_rooms_for_hotel(create_hotel):
     response, token = create_hotel
     pass
+
+
+@pytest.fixture
+def create_hotel_and_room(create_hotel):
+    hotel_response, token = create_hotel
+    assert hotel_response.status_code == 201
+    hotel_id = hotel_response.json()["id"]
+
+    room_response = client.post(
+        "/room/",
+        json={
+            "hotel_id": hotel_id,
+            "room_number": "101",
+            "room_type": "double",
+            "price_per_night": 120.0,
+            "available": True,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert room_response.status_code == 200
+    room_id = room_response.json()["id"]
+    return hotel_id, room_id
 
 def test_admin_created_on_startup():
     with TestClient(app):  # triggers startup event
@@ -153,8 +186,8 @@ def test_auth_error():
 
 # Features tests
 def test_add_feature(create_features):
-    response = create_features
-    assert response.status_code == 201
+    feature_id = create_features
+    assert feature_id > 0
 
 # Booking tests
 def test_post_hotel(create_hotel):
@@ -236,7 +269,7 @@ def test_booking_requires_authentication(create_hotel_and_room):
 
 def test_booking_rejects_non_guest(create_hotel_and_room, manager_login):
     hotel_id, room_id = create_hotel_and_room
-    _, manager_token = manager_login
+    manager_token = manager_login
     checkin = date.today() + timedelta(days=3)
     checkout = date.today() + timedelta(days=5)
     response = client.post(
@@ -255,7 +288,7 @@ def test_booking_rejects_non_guest(create_hotel_and_room, manager_login):
 
 def test_booking_overlap_rejected(create_hotel_and_room, guest_login):
     hotel_id, room_id = create_hotel_and_room
-    _, guest_token = guest_login
+    guest_token = guest_login
     first_checkin = date.today() + timedelta(days=7)
     first_checkout = date.today() + timedelta(days=10)
     first_response = client.post(
@@ -289,7 +322,7 @@ def test_booking_overlap_rejected(create_hotel_and_room, guest_login):
 
 def test_booking_status_confirmed_and_total_price(create_hotel_and_room, guest_login):
     hotel_id, room_id = create_hotel_and_room
-    _, guest_token = guest_login
+    guest_token = guest_login
     checkin = date.today() + timedelta(days=12)
     checkout = date.today() + timedelta(days=15)
     response = client.post(

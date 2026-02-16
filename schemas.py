@@ -94,7 +94,7 @@ class RoomBase(BaseModel):
     room_number: str
     room_type: Optional[str] = None
     price_per_night: float
-    is_active: bool = True
+    available: bool = True
 
 class RoomDisplay(RoomBase):
     id: int
@@ -104,7 +104,7 @@ class RoomPatchBase(BaseModel):
     room_number: Optional[str] = None
     room_type: Optional[str] = None
     price_per_night: Optional[float] = None
-    is_active: Optional[bool] = None
+    available: Optional[bool] = None
 
 class HotelBase(BaseModel):
     hotel_name: str = Field(..., min_length=1, max_length=50)

@@ -44,7 +44,7 @@ def create_room(request: RoomBase, current_user: UserBase, db: Session):
         room_number=request.room_number,
         room_type=request.room_type,
         price_per_night=request.price_per_night,
-        is_active=request.is_active
+        available=request.available
     )
     try:
         db.add(new_room)
