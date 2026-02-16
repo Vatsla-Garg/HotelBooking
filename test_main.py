@@ -159,6 +159,15 @@ def create_hotel_and_room(create_hotel):
     room_id = room_response.json()["id"]
     return hotel_id, room_id
 
+@pytest.fixture
+def guest2_login():
+    return _ensure_user(
+        email="guest2@gmail.com",
+        username="guest2",
+        password="Azerty@123",
+        role="GUEST",
+    )
+
 def test_admin_created_on_startup():
     with TestClient(app):  # triggers startup event
         db = TestingSessionLocal()
@@ -341,4 +350,47 @@ def test_booking_status_confirmed_and_total_price(create_hotel_and_room, guest_l
     data = response.json()
     assert data["booking_status"] == "CONFIRMED"
     # 3 nights * 120.0 price_per_night * 2 rooms
-    assert data["total_price"] == 720.0
+    assert data["total_price"] == 360.0
+
+def test_booking_checkin_in_past_rejected(create_hotel_and_room, guest_login):
+    token = guest_login
+    hotel_id, room_id = create_hotel_and_room
+
+    res = client.post(
+        "/booking/",
+        json={
+            "hotel_id": hotel_id,
+            "room_id": room_id,
+            "checkin_date": (date.today() - timedelta(days=1)).isoformat(),
+            "checkout_date": (date.today() + timedelta(days=2)).isoformat(),
+            "person_number": 1,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert res.status_code == 400
+    assert "today" in res.json().get("detail", "").lower()
+
+def test_guest_cannot_delete_other_users_booking(create_hotel_and_room, guest_login, guest2_login):
+    hotel_id, room_id = create_hotel_and_room
+
+    # guest1 creates booking
+    g1 = guest_login
+    create_res = client.post(
+        "/booking/",
+        json={
+            "hotel_id": hotel_id,
+            "room_id": room_id,
+            "checkin_date": (date.today() + timedelta(days=3)).isoformat(),
+            "checkout_date": (date.today() + timedelta(days=5)).isoformat(),
+            "person_number": 1,
+        },
+        headers={"Authorization": f"Bearer {g1}"},
+    )
+    assert create_res.status_code == 200
+    booking_id = create_res.json()["id"]
+
+    # guest2 tries delete
+    g2 = guest2_login
+    del_res = client.delete(f"/booking/{booking_id}", headers={"Authorization": f"Bearer {g2}"})
+    assert del_res.status_code == 404

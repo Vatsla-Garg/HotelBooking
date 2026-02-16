@@ -51,4 +51,15 @@ def get_booking(db: Session = Depends(get_db), current_user: UserBase = Depends(
                           status.HTTP_204_NO_CONTENT: {'description': 'Booking deleted successfully'}}
                )
 def delete_booking(booking_id: int, db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)):
-    return db_booking.delete_booking(booking_id, db, current_user.id)
+    return db_booking.delete_booking(booking_id, db, current_user)
+
+#patch booking
+
+@router.patch(
+    "/{booking_id}/cancel",
+    response_model=BookingDisplay,
+    summary="Cancel a booking (guest)",
+    description="Guest cancels their own booking. Updates booking_status to CANCELLED."
+)
+def cancel_booking(booking_id: int, db: Session = Depends(get_db),current_user: UserBase = Depends(get_current_user)):
+    return db_booking.cancel_booking(db, booking_id, current_user)

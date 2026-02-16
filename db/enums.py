@@ -11,7 +11,7 @@ class UserStatus(str, Enum):
 
 class BookingStatus(str, Enum):
     CONFIRMED = "CONFIRMED"
-    CANCELED = "CANCELED"
+    CANCELLED = "CANCELLED"
 
 class Rate(int, Enum):
     ONE=1
